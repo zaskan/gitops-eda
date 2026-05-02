@@ -1,0 +1,9 @@
+{
+  "extra_vars": {
+    "glpi_api_url": "{{ glpi_api_url }}",
+    "glpi_username": "{{ glpi_username }}",
+    "glpi_password": "{{ glpi_password }}",
+    "glpi_user_token": "{{ glpi_user_token }}",
+    "glpi_app_token": "{{ glpi_app_token }}"
+  }
+}

@@ -1,25 +1,25 @@
 jobtemplates:
-  - name: "[JT] Open Servicenow Ticket"
+  - name: "[JT] Open GLPI Ticket"
     org: "Default"
     inv: "Automation Controller Inventory"
     project: "Ansible Gitops EDA Demo"
     playbook: "open_ticket.yaml"
     creds:
-      - "ServiceNow Credential"
+      - "GLPI Credential"
     use_fact_cache: false
     ask_limit_on_launch: false
     ask_variables_on_launch: true
     allow_simultaneous: true
     execution_environment: "Default execution environment"
 
-  - name: "[JT] Update Servicenow Ticket"
+  - name: "[JT] Update GLPI Ticket"
     org: "Default"
     inv: "Automation Controller Inventory"
     project: "Ansible Gitops EDA Demo"
     playbook: "update_ticket.yaml"
     creds:
       - "Red Hat Ansible Automation Platform Credential"
-      - "ServiceNow Credential"
+      - "GLPI Credential"
     use_fact_cache: false
     ask_limit_on_launch: false
     ask_variables_on_launch: true

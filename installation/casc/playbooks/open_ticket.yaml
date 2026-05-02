@@ -3,25 +3,20 @@
   hosts: localhost
   gather_facts: false
   tasks:
+    - name: Open GLPI incident via glpi_operations
+      ansible.builtin.include_role:
+        name: glpi_operations
+      register: glpi_open_output
+      vars:
+        glpi_action: open_incident
+        glpi_incident_title: "{{ title }}"
+        glpi_incident_description: >-
+          <p>{{ description | default('', true) }}</p>
+        glpi_incident_impact: "{{ impact | default(3) | int }}"
+        glpi_incident_urgency: "{{ urgency | default(3) | int }}"
 
-    - name: Open ServiceNow incident
-      servicenow.itsm.incident:
-        state: new
-        caller: "admin"
-        short_description: "{{ title }}"
-        description: "{{ description }}"
-        impact: "low"
-        urgency: "high"
-        other:
-          cause: "{{ date | b64encode }}"
-      register: incident
-
-    - name: Set ServiceNow incident state
-      servicenow.itsm.incident:
-        state: in_progress
-        number: "{{ incident.record.number }}"
-
-    - name: Set ServiceNow incident number
+    - name: Set incident id for downstream jobs
       ansible.builtin.set_stats:
         data:
-          incident: "{{ incident.record.number }}"
+          incident: "{{ glpi_last_ticket_id | string }}"
+      when: glpi_last_ticket_id is defined

@@ -14,9 +14,10 @@ Repository for fully automated installation and configuration of the necessary e
 - Run installation:
 
 ```sh
-SERVICENOW_HOST=https://your-servicenow-developer-instance-hostname
-SERVICENOW_USER=your-servicenow-developer-instance-username
-SERVICENOW_PASS=your-servicenow-developer-instance-password
+export GLPI_API_URL=https://glpi.example.org/apirest.php
+export GLPI_USERNAME=glpi
+export GLPI_PASSWORD=your-glpi-password
+# Optional: GLPI_USER_TOKEN, GLPI_APP_TOKEN
 CLUSTER_DOMAIN=$(oc whoami --show-server | sed 's~https://api\.~~' | sed 's~:.*~~')
 ansible-playbook installation/install.yaml -e "ocp_host=$CLUSTER_DOMAIN"
 ```

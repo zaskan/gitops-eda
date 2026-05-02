@@ -1,7 +1,0 @@
-{
-  "extra_vars": {
-    "instance": "{{ sn_host }}",
-    "username": "{{ sn_password }}",
-    "password": "{{ sn_username }}"
-  }
-}

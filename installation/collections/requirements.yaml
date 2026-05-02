@@ -5,9 +5,8 @@ collections:
   - name: https://github.com/zaskan/ansible_automation_platform.casc.git
     type: git
     version: main
-  - name: ansible.controller
-  - name: ansible.platform
-  - name: ansible.eda
-  - name: servicenow.itsm
-  - name: kubernetes.core
-  - name: community.general
+  # - name: ansible.controller
+  # - name: ansible.platform
+  # - name: ansible.eda
+  # - name: kubernetes.core
+  # - name: community.general

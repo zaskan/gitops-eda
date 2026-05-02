@@ -10,4 +10,4 @@ activations:
     awx_token: "Ansible Controller"
     credential: 
       - "Red Hat Ansible Automation Platform Credential"
-      - "ServiceNow Credential"
+      - "GLPI Credential"

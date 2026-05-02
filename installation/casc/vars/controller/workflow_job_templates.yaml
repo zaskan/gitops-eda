@@ -21,11 +21,11 @@ workflowjobtemplates:
           type: job_template
         related:
           success_nodes:
-            - identifier: "Update Servicenow Ticket"
-      - identifier: "Update Servicenow Ticket"
+            - identifier: "Update GLPI Ticket"
+      - identifier: "Update GLPI Ticket"
         unified_job_template:
           organization:
             name: "Default"
-          name: "[JT] Update Servicenow Ticket"
+          name: "[JT] Update GLPI Ticket"
           type: job_template
 

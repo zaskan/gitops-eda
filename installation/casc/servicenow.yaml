@@ -3,89 +3,135 @@
   ansible.builtin.include_vars:
     file: vars/servicenow/users.yaml
 
-- name: Check if Ansible EDA user already exists
-  servicenow.itsm.api_info:
-    instance:
-      host: "{{ sn_host }}"
-      username: "{{ sn_username }}"
-      password: "{{ sn_password }}"
-    resource: sys_user
-    sysparm_query: "user_name={{ users[0].username }}"
-    columns:
-      - sys_id
-  register: snow_eda_user_info
+- name: Provision GLPI users and administrator profile
+  when: users | length > 0
+  block:
+    - name: Initialize GLPI API session (write)
+      ansible.builtin.uri:
+        url: "{{ glpi_api_url }}/initSession?session_write=true"
+        method: GET
+        headers:
+          Content-Type: application/json
+          App-Token: "{{ glpi_app_token if (glpi_app_token is defined and glpi_app_token | length > 0) else omit }}"
+          Authorization: "{{ ('user_token ' ~ glpi_user_token) if (glpi_user_token is defined and glpi_user_token | length > 0) else omit }}"
+        url_username: "{{ glpi_username if glpi_use_basic_auth else omit }}"
+        url_password: "{{ glpi_password if glpi_use_basic_auth else omit }}"
+        force_basic_auth: "{{ glpi_use_basic_auth | bool }}"
+        validate_certs: "{{ glpi_validate_certs | default(true) }}"
+        return_content: true
+        status_code: [200]
+      register: glpi_init
+      no_log: true
+      vars:
+        glpi_use_basic_auth: >-
+          {{ (glpi_user_token is not defined or glpi_user_token | length == 0)
+             and (glpi_username is defined and glpi_username | length > 0)
+             and (glpi_password is defined and glpi_password | length > 0) }}
 
-- name: Create Ansible EDA user if doesn't exists
-  servicenow.itsm.api:
-    instance:
-      host: "{{ sn_host }}"
-      username: "{{ sn_username }}"
-      password: "{{ sn_password }}"
-    resource: sys_user
-    action: post
-    data:
-      first_name: "{{ users[0].username }}"                                   
-      last_name: "{{ users[0].username }}"                                      
-      name: "{{ users[0].username }}"                                             
-      user_name: "{{ users[0].username }}"                           
-      user_password: "{{ users[0].password }}"                      
-      title: "{{ users[0].username }}"                                   
-    query_params:
-      sysparm_input_display_value: true
-  register: new_snow_eda_user_info
-  when: snow_eda_user_info.record | length == 0
+    - name: Set GLPI session token fact
+      ansible.builtin.set_fact:
+        glpi_session_token: "{{ glpi_init.json.session_token }}"
 
-- name: Retrieve Ansible EDA user sys_id
-  ansible.builtin.set_fact:
-    snow_eda_user_sys_id: "{{ item | json_query(query) }}"
-  vars:
-    query: "record[0].sys_id || record.sys_id"
-  loop:
-    - "{{ snow_eda_user_info }}"
-    - "{{ new_snow_eda_user_info }}"
-  when: item.record is defined
+    - name: Search GLPI user by login
+      ansible.builtin.uri:
+        url: >-
+          {{ glpi_api_url }}/search/User?range=0-1&criteria[0][itemtype]=User&criteria[0][field]=1&criteria[0][searchtype]=equals&criteria[0][value]={{ users[0].username | urlencode }}
+        method: GET
+        headers:
+          Content-Type: application/json
+          App-Token: "{{ glpi_app_token if (glpi_app_token is defined and glpi_app_token | length > 0) else omit }}"
+          Session-Token: "{{ glpi_session_token }}"
+        validate_certs: "{{ glpi_validate_certs | default(true) }}"
+        return_content: true
+        status_code: [200]
+      register: glpi_user_search
 
-- name: Get Admin role information
-  servicenow.itsm.api_info:
-    instance:
-      host: "{{ sn_host }}"
-      username: "{{ sn_username }}"
-      password: "{{ sn_password }}"
-    resource: sys_user_role
-    sysparm_query: "name={{ users[0].role }}"
-    columns:
-      - sys_id
-  register: snow_admin_role_info
+    - name: Create GLPI user if missing
+      ansible.builtin.uri:
+        url: "{{ glpi_api_url }}/User"
+        method: POST
+        headers:
+          Content-Type: application/json
+          App-Token: "{{ glpi_app_token if (glpi_app_token is defined and glpi_app_token | length > 0) else omit }}"
+          Session-Token: "{{ glpi_session_token }}"
+        body_format: json
+        body:
+          input:
+            name: "{{ users[0].username }}"
+            password: "{{ users[0].password }}"
+            realname: "{{ users[0].username }}"
+            authtype: 1
+            is_active: 1
+        validate_certs: "{{ glpi_validate_certs | default(true) }}"
+        return_content: true
+        status_code: [200, 201]
+      register: glpi_new_user
+      when: glpi_user_search.json.totalcount | default(0) | int == 0
 
-- name: Retrieve Admin role sys_id
-  ansible.builtin.set_fact:
-    snow_admin_role_sys_id: "{{ snow_admin_role_info | json_query(query) }}"
-  vars:
-    query: "record[0].sys_id || record.sys_id"
-  when: snow_admin_role_info.record is defined
+    - name: Resolve GLPI user id from search
+      ansible.builtin.set_fact:
+        glpi_eda_user_id: "{{ (glpi_user_search.json.data | dict2items | map(attribute='key') | first) | int }}"
+      when:
+        - glpi_user_search.json.totalcount | default(0) | int > 0
+        - glpi_user_search.json.data is defined
 
-- name: Check if Ansible EDA user and Admin role are already linked
-  servicenow.itsm.api_info:
-    instance:
-      host: "{{ sn_host }}"
-      username: "{{ sn_username }}"
-      password: "{{ sn_password }}"
-    resource: sys_user_has_role
-    sysparm_query: "user={{ snow_eda_user_sys_id }}^role={{ snow_admin_role_sys_id }}"
-    columns:
-      - sys_id
-  register: snow_eda_user_role_link_info
+    - name: Resolve GLPI user id from create response
+      ansible.builtin.set_fact:
+        glpi_eda_user_id: "{{ glpi_new_user.json.id | int }}"
+      when: >-
+        (glpi_user_search.json.totalcount | default(0) | int == 0)
+        and (not (glpi_new_user.skipped | default(false)))
+        and (glpi_new_user.json is defined) and (glpi_new_user.json.id is defined)
 
-- name: Link Ansible EDA user and Admin role
-  servicenow.itsm.api:
-    instance:
-      host: "{{ sn_host }}"
-      username: "{{ sn_username }}"
-      password: "{{ sn_password }}"
-    resource: sys_user_has_role
-    action: post
-    data:
-      user: "{{ snow_eda_user_sys_id }}"
-      role: "{{ snow_admin_role_sys_id }}"
-  register: new_user_role_link_sys_id
-  when: snow_eda_user_role_link_info.record | length== 0
+    - name: Search existing Profile_User (user + admin profile)
+      ansible.builtin.uri:
+        url: >-
+          {{ glpi_api_url }}/search/Profile_User?range=0-1&criteria[0][itemtype]=Profile_User&criteria[0][field]=5&criteria[0][searchtype]=equals&criteria[0][value]={{ glpi_eda_user_id | urlencode }}&criteria[1][link]=AND&criteria[1][itemtype]=Profile_User&criteria[1][field]=4&criteria[1][searchtype]=equals&criteria[1][value]={{ glpi_profile_id | urlencode }}
+        method: GET
+        headers:
+          Content-Type: application/json
+          App-Token: "{{ glpi_app_token if (glpi_app_token is defined and glpi_app_token | length > 0) else omit }}"
+          Session-Token: "{{ glpi_session_token }}"
+        validate_certs: "{{ glpi_validate_certs | default(true) }}"
+        return_content: true
+        status_code: [200]
+      register: glpi_profile_user_search
+      when: glpi_eda_user_id is defined
+
+    - name: Link GLPI user to administrator profile
+      ansible.builtin.uri:
+        url: "{{ glpi_api_url }}/Profile_User"
+        method: POST
+        headers:
+          Content-Type: application/json
+          App-Token: "{{ glpi_app_token if (glpi_app_token is defined and glpi_app_token | length > 0) else omit }}"
+          Session-Token: "{{ glpi_session_token }}"
+        body_format: json
+        body:
+          input:
+            users_id: "{{ glpi_eda_user_id | int }}"
+            profiles_id: "{{ glpi_profile_id | int }}"
+            entities_id: "{{ glpi_entity_id | default(0) | int }}"
+            is_recursive: 1
+        validate_certs: "{{ glpi_validate_certs | default(true) }}"
+        return_content: true
+        status_code: [200, 201]
+      register: glpi_new_profile_user
+      when: >-
+        glpi_eda_user_id is defined and glpi_profile_user_search is defined
+        and not (glpi_profile_user_search.skipped | default(false))
+        and (glpi_profile_user_search.json | default({})).totalcount | default(0) | int == 0
+
+  always:
+    - name: End GLPI API session
+      ansible.builtin.uri:
+        url: "{{ glpi_api_url }}/killSession"
+        method: GET
+        headers:
+          Content-Type: application/json
+          App-Token: "{{ glpi_app_token if (glpi_app_token is defined and glpi_app_token | length > 0) else omit }}"
+          Session-Token: "{{ glpi_session_token }}"
+        validate_certs: "{{ glpi_validate_certs | default(true) }}"
+        status_code: [200, 400]
+      when: glpi_api_url is defined and glpi_session_token is defined
+      failed_when: false

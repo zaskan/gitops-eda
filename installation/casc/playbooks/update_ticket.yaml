@@ -1,17 +1,12 @@
 ---
-- name: Add information to Servicenow Ticket
+- name: Add information to GLPI ticket
   hosts: localhost
-  gather_facts: true
-  tasks:
-
-    - name: Add information to Servicenow Incident
-      servicenow.itsm.api:
-        resource: incident
-        action: patch
-        sys_id: "{{ ansible_eda.event.sys_id }}"
-        data:
-          state: 3
-          incident_state: 3
-          number: "{{ incident_id }}"
-          work_notes: "The max number of replicas for the app Payment, has been increased to {{ new_replicas }}. Please, check the current value of replicas in the file {{ manifest }} stored in the repository {{ repository }}."
-          caller: "admin"
+  gather_facts: false
+  vars:
+    glpi_action: add_ticket_task
+    glpi_incident_id: "{{ incident_id }}"
+    glpi_task_content: >-
+      <p>The max number of replicas for the app Payment, has been increased to {{ new_replicas }}.
+      Please, check the current value of replicas in the file {{ manifest }} stored in the repository {{ repository }}.</p>
+  roles:
+    - role: glpi_operations

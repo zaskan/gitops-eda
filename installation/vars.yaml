@@ -6,7 +6,7 @@ namespaces:
 operators:
   - name: openshift-gitops-operator
     namespace: openshift-operators
-    channel: gitops-1.14
+    channel: gitops-1.20.3
     source: redhat-operators
     sourcenamespace: openshift-marketplace
     clusterwide: true
@@ -18,14 +18,14 @@ operators:
     clusterwide: true
   - name: ansible-automation-platform-operator
     namespace: aap
-    channel: stable-2.5
+    channel: stable-2.6
     source: redhat-operators
     sourcenamespace: openshift-marketplace
-    clusterwide: false
+    clusterwide: true
 
 aap_ocp:
   ocp_domain: "{{ ocp_host }}"
-  name: aap
+  name: ansible
   namespace: aap
 
 gitea:
@@ -33,16 +33,16 @@ gitea:
   ocp_domain: "{{ ocp_host }}"
   repositories:
     - name: payment-deploy
-      url: https://github.com/clbartolome/gitops-eda.git
-      branch: master
+      url: https://github.com/zaskan/gitops-eda.git
+      branch: glpi
       path: "/payment-deploy"
     - name: ansible-rulebooks
-      url: https://github.com/clbartolome/gitops-eda.git
-      branch: master
+      url: https://github.com/zaskan/gitops-eda.git
+      branch: glpi
       path: "/installation/casc/rulebooks"
     - name: ansible-playbooks
-      url: https://github.com/clbartolome/gitops-eda.git
-      branch: master
+      url: https://github.com/zaskan/gitops-eda.git
+      branch: glpi
       path: "/installation/casc/playbooks"
   users: []
 
@@ -50,12 +50,6 @@ argo:
   ocp_domain: "{{ ocp_host }}"
   target_namespaces: # Namespaces where ArgoCD will create resources
     - name: payment
-  environment_repo_url: https://github.com/clbartolome/gitops-eda.git
-  environment_repo_revision: master
+  environment_repo_url: https://github.com/zaskan/gitops-eda.git
+  environment_repo_revision: glpi
   environment_path: environment/* # Will create an app for each directory in this path
-
-servicenow:
-  sn_host:
-  sn_username:
-  sn_password:
-  

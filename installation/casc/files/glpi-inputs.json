@@ -1,0 +1,35 @@
+{
+  "fields": [
+    {
+      "id": "glpi_api_url",
+      "type": "string",
+      "label": "GLPI REST base URL (no trailing slash, e.g. https://glpi.example.org/apirest.php)"
+    },
+    {
+      "id": "glpi_username",
+      "type": "string",
+      "label": "GLPI username (omit if using user token only)"
+    },
+    {
+      "id": "glpi_password",
+      "type": "string",
+      "label": "GLPI password",
+      "secret": true
+    },
+    {
+      "id": "glpi_user_token",
+      "type": "string",
+      "label": "GLPI user API token (optional)",
+      "secret": true
+    },
+    {
+      "id": "glpi_app_token",
+      "type": "string",
+      "label": "GLPI App-Token (optional)",
+      "secret": true
+    }
+  ],
+  "required": [
+    "glpi_api_url"
+  ]
+}

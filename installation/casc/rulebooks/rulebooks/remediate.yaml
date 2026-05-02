@@ -1,4 +1,4 @@
-- name: EDA Listener for Alertmanager and Servicenow
+- name: EDA Listener for Alertmanager and incident webhooks
   hosts: localhost
   sources:
     - name: Listen to Alertmanager
@@ -8,18 +8,15 @@
         data_host_path: ""
 
     - name: Check new Incidents
-      cloin.eda.snow_records:
-        instance: "{{ instance }}"
-        username: "{{ username }}"
-        password: "{{ password }}"
-        table: incident
-        interval: 1
+      ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 5001
   rules:
     - name: Get Alertmanager Alerts
       condition: event.alert.labels.alertname == "HPAReplicasAtMaxCapacity" and event.alert.status == "firing"
       action:
         run_job_template:
-          name: "[JT] Open Servicenow Ticket"
+          name: "[JT] Open GLPI Ticket"
           organization: "Default"
           job_args:
             extra_vars:
@@ -28,12 +25,14 @@
               date: "{{ event.alert.startsAt }}"
 
     - name: Trigger Remediation for HPAReplicasAtMaxCapacity
-      condition: event.short_description == "HPAReplicasAtMaxCapacity"
+      condition: >-
+        event.payload is defined and event.payload.short_description is defined
+        and event.payload.short_description == "HPAReplicasAtMaxCapacity"
       action:
         run_workflow_template:
           name: "[WF] Autoscale Pipeline"
           organization: "Default"
           job_args:
             extra_vars:
-              incident_id: "{{ event.number }}"
-              description: "{{ event.description }}"
+              incident_id: "{{ event.payload.number }}"
+              description: "{{ event.payload.description }}"

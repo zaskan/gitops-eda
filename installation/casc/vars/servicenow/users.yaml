@@ -1,4 +1,12 @@
+# GLPI profile assigned to each provisioned user (Super-Admin is 4 on a default GLPI install).
+glpi_profile_id: 4
+# Entity scope for Profile_User (0 = root entity).
+glpi_entity_id: 0
+#
+# API client settings (glpi_api_url, auth) are expected from the parent play or inventory,
+# e.g. glpi_api_url, glpi_username, glpi_password and optional glpi_app_token, glpi_user_token,
+# glpi_validate_certs — optional; set on the parent play if needed.
+
 users:
   - username: "ansible"
     password: "openshift"
-    role: "sn_incident_read"

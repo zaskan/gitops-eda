@@ -10,66 +10,66 @@
       register: install_collections
       changed_when: install_collections.rc == 0
 
-    # - name: Create Demo namespaces
-    #   kubernetes.core.k8s:
-    #     state: present
-    #     definition:
-    #       apiVersion: project.openshift.io/v1
-    #       kind: Project
-    #       metadata:
-    #         name: "{{ namespace.name }}"
-    #   loop: "{{ namespaces }}"
-    #   loop_control:
-    #     loop_var: namespace
+    - name: Create Demo namespaces
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: project.openshift.io/v1
+          kind: Project
+          metadata:
+            name: "{{ namespace.name }}"
+      loop: "{{ namespaces }}"
+      loop_control:
+        loop_var: namespace
 
     - name: Setup Gitea
       ansible.builtin.include_role:
         name: demos.utils.gitea
 
-    # - name: Create thanos service account
-    #   kubernetes.core.k8s:
-    #     state: present
-    #     namespace: payment
-    #     definition:
-    #       apiVersion: v1
-    #       kind: ServiceAccount
-    #       metadata:
-    #         name: thanos
+    - name: Create thanos service account
+      kubernetes.core.k8s:
+        state: present
+        namespace: payment
+        definition:
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: thanos
 
     # - name: Install required operators
     #   ansible.builtin.include_role:
     #     name: demos.utils.operator
 
-    # - name: Configure ArgoCD
-    #   ansible.builtin.include_role:
-    #     name: demos.utils.argocd
+    - name: Configure ArgoCD
+      ansible.builtin.include_role:
+        name: demos.utils.argocd
 
     - name: Configure AAP
       ansible.builtin.include_role:
         name: demos.utils.aap_ocp
 
-    # - name: Create ArgoCD environment applications
-    #   kubernetes.core.k8s:
-    #     state: present
-    #     definition:
-    #       apiVersion: argoproj.io/v1alpha1
-    #       kind: Application
-    #       metadata:
-    #         name: payment
-    #         namespace: openshift-gitops
-    #       spec:
-    #         project: default
-    #         source:
-    #           repoURL: http://gitea.gitea.svc.cluster.local:3000/gitea/payment-deploy
-    #           targetRevision: master
-    #           path: .
-    #         destination:
-    #           server: https://kubernetes.default.svc
-    #           namespace: payment
-    #         syncPolicy:
-    #           automated:
-    #             prune: true
-    #             selfHeal: true
+    - name: Create ArgoCD environment applications
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: payment
+            namespace: openshift-gitops
+          spec:
+            project: default
+            source:
+              repoURL: http://gitea.gitea.svc.cluster.local:3000/gitea/payment-deploy
+              targetRevision: master
+              path: .
+            destination:
+              server: https://kubernetes.default.svc
+              namespace: payment
+            syncPolicy:
+              automated:
+                prune: true
+                selfHeal: true
 
     - name: Trigger Ansible Automation Platform Configuration as Code
       ansible.builtin.include_tasks:

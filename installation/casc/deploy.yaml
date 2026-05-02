@@ -2,7 +2,7 @@
   ansible.builtin.include_vars:
     file: custom.yaml
 
-# - name: Create Servicenow user
+# - name: Provision GLPI users (API session, create user, assign admin profile)
 #   ansible.builtin.include_tasks:
 #     file: servicenow.yaml
 
