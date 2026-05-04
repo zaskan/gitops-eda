@@ -65,7 +65,7 @@ argo:
   ocp_domain: "{{ ocp_host }}"
   target_namespaces: # Namespaces where ArgoCD will create resources
     - name: payment
-  environment_repo_url: https://github.com/clbartolome/gitops-eda.git
+  environment_repo_url: https://github.com/zaskan/gitops-eda.git
   environment_repo_revision: vol_increase_feature
   environment_path: environment/* # Will create an app for each directory in this path
 
