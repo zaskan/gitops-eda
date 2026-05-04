@@ -13,9 +13,17 @@
     installation_type: ocp
     controller_vars_dir: casc/vars/controller
 
+# ansible.eda modules only read controller_host from task args or env (CONTROLLER_HOST / AAP_HOSTNAME);
+# play vars are not auto-mapped. Mirror casc.controller, which sets CONTROLLER_HOST for Controller API calls.
 - name: Configure Ansible Eda
   ansible.builtin.include_role:
     name: ansible_automation_platform.casc.eda
+    apply:
+      environment:
+        CONTROLLER_HOST: "{{ controller_host }}"
+        CONTROLLER_USERNAME: "{{ controller_username }}"
+        CONTROLLER_PASSWORD: "{{ controller_password }}"
+        CONTROLLER_VERIFY_SSL: "false"
   vars:
     installation_type: ocp
     eda_vars_dir: casc/vars/eda
