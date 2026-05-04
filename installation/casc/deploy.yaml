@@ -1,10 +1,10 @@
 - name: Include vars
   ansible.builtin.include_vars:
-    file: custom.yaml
+    file: vars/custom.yaml
 
-- name: Create Servicenow user
+- name: Bootstrap itsm-app users via itsm_ansible_role
   ansible.builtin.include_tasks:
-    file: servicenow.yaml
+    file: itsm_bootstrap.yaml
 
 - name: Configure Ansible Controller
   ansible.builtin.include_role:

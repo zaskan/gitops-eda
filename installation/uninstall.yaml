@@ -37,6 +37,15 @@
       loop_control:
         loop_var: namespace
 
+    - name: Remove itsm-app namespace
+      kubernetes.core.k8s:
+        state: absent
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: itsm-app
+
     - name: Remove Gitea Namespace
       kubernetes.core.k8s:
         state: absent

@@ -1,0 +1,18 @@
+---
+- name: Configure itsm-app via itsm_ansible_role (API user, optional demo data)
+  ansible.builtin.include_role:
+    name: itsm_ansible_role
+  vars:
+    itsm_api_base_url: "{{ itsm.api_base_url.rstrip('/') }}"
+    itsm_api_user: "{{ itsm.api_user }}"
+    itsm_api_password: "{{ itsm.api_password }}"
+    itsm_validate_certs: true
+    itsm_ansible_role_check_connection: true
+    itsm_ansible_role_admin_settings: false
+    itsm_ansible_role_users: true
+    itsm_ansible_role_asset_types: false
+    itsm_ansible_role_inventory: false
+    itsm_ansible_role_kb: false
+    itsm_ansible_role_incidents: false
+    itsm_ansible_role_followups: false
+    itsm_users: "{{ itsm_bootstrap_users }}"

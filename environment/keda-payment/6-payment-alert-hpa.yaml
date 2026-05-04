@@ -14,7 +14,7 @@ spec:
           for: 1s
           labels:
             severity: warning
-            snow_action: open_incident
+            itsm_action: open_incident
             manifest: payment-scaler.yaml
           annotations:
             summary: "KEDA Payment replicas at maximum capacity"

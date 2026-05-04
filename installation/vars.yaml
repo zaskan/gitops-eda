@@ -28,20 +28,35 @@ aap_ocp:
   name: ansible
   namespace: aap
 
+# Automation Controller route (Credential “host” / API base without path). Override with AAP_HOST.
+aap_controller_fqdn: "{{ aap_ocp.name }}-controller-{{ aap_ocp.namespace }}.apps.{{ ocp_host }}"
+# Event-Driven Ansible controller API (ansible.eda.* modules need controller_host). Override with AAP_HOSTNAME or CONTROLLER_HOST.
+eda_controller_fqdn: "{{ aap_ocp.name }}-eda-{{ aap_ocp.namespace }}.apps.{{ ocp_host }}"
+
+aap_username: "{{ lookup('ansible.builtin.env', 'AAP_USERNAME') | default(lookup('ansible.builtin.env', 'CONTROLLER_USERNAME', default=''), true) | default('admin', true) }}"
+aap_password: "{{ lookup('ansible.builtin.env', 'AAP_PASSWORD') | default(lookup('ansible.builtin.env', 'CONTROLLER_PASSWORD', default=''), true) | default('', true) }}"
+
+# EDA CAC / ansible.eda API client (see ansible.eda doc fragment: controller_host, CONTROLLER_HOST, AAP_HOSTNAME)
+controller_host: "{{ lookup('ansible.builtin.env', 'AAP_HOSTNAME') | default(lookup('ansible.builtin.env', 'CONTROLLER_HOST', default=''), true) | default('https://' ~ eda_controller_fqdn, true) }}"
+controller_username: "{{ aap_username }}"
+controller_password: "{{ aap_password }}"
+
+aap_host: "{{ lookup('ansible.builtin.env', 'AAP_HOST') | default('https://' ~ aap_controller_fqdn, true) }}"
+
 gitea:
   namespace: gitea
   ocp_domain: "{{ ocp_host }}"
   repositories:
     - name: payment-deploy
-      url: https://github.com/clbartolome/gitops-eda.git
+      url: https://github.com/zaskan/gitops-eda.git
       branch: vol_increase_feature # Cambiar a master cuando se haga el merge
       path: "/payment-deploy"
     - name: ansible-rulebooks
-      url: https://github.com/clbartolome/gitops-eda.git
+      url: https://github.com/zaskan/gitops-eda.git
       branch: vol_increase_feature
       path: "/installation/casc/rulebooks"
     - name: ansible-playbooks
-      url: https://github.com/clbartolome/gitops-eda.git
+      url: https://github.com/zaskan/gitops-eda.git
       branch: vol_increase_feature
       path: "/installation/casc/playbooks"
   users: []
@@ -54,8 +69,36 @@ argo:
   environment_repo_revision: vol_increase_feature
   environment_path: environment/* # Will create an app for each directory in this path
 
-servicenow:
-  sn_host: "{{ lookup('ansible.builtin.env', 'SERVICENOW_HOST') }}"
-  sn_username: "{{ lookup('ansible.builtin.env', 'SERVICENOW_USER') }}"
-  sn_password: "{{ lookup('ansible.builtin.env', 'SERVICENOW_PASS') }}"
-  
+# itsm-app on cluster (image: build in-cluster from Git repoURL, or set ITSM_APP_IMAGE)
+itsm_app:
+  # When true, install.yaml runs oc new-build <repoURL#ref> and oc start-build (requires oc only)
+  cluster_build: "{{ lookup('ansible.builtin.env', 'ITSM_CLUSTER_BUILD') | default('true', true) | bool }}"
+  source_git_url: "{{ lookup('ansible.builtin.env', 'ITSM_APP_GIT_URL') | default('https://github.com/zaskan/itsm-app.git', true) }}"
+  source_git_ref: "{{ lookup('ansible.builtin.env', 'ITSM_APP_GIT_REF') | default('main', true) }}"
+  session_secret: "{{ lookup('ansible.builtin.env', 'ITSM_SESSION_SECRET') | default('replace-with-long-random-string', true) }}"
+  mcp_token: "{{ lookup('ansible.builtin.env', 'ITSM_MCP_TOKEN') | default('084f926a012ae68ff7928033beeeef08e4e3c99304d98f8bf9b2521e13b6fc50', true) }}"
+  bootstrap_admin_user: "{{ lookup('ansible.builtin.env', 'ITSM_BOOTSTRAP_ADMIN_USER') | default('admin', true) }}"
+  bootstrap_admin_password: "{{ lookup('ansible.builtin.env', 'ITSM_BOOTSTRAP_ADMIN_PASSWORD') | default('admin', true) }}"
+
+# Full source for `oc new-build` (URL#ref). Override with ITSM_APP_SOURCE, else built from itsm_app.* above.
+itsm_app_source_repo_url: "{{ lookup('ansible.builtin.env', 'ITSM_APP_SOURCE') | default((itsm_app.source_git_url | trim | regex_replace('/$', '')) ~ '#' ~ itsm_app.source_git_ref, true) }}"
+
+# Raw manifest base for `oc apply -f` (upstream k8s/*.yaml). Override with ITSM_APP_MANIFEST_BASE (directory URL ending in /k8s).
+itsm_app_manifest_base: "{{ lookup('ansible.builtin.env', 'ITSM_APP_MANIFEST_BASE') | default('https://raw.githubusercontent.com/zaskan/itsm-app/' ~ itsm_app.source_git_ref ~ '/k8s', true) }}"
+
+# itsm API (public Route); used by CAC and AAP credentials — must match bootstrap admin until you create other API users
+itsm:
+  api_base_url: "{{ lookup('ansible.builtin.env', 'ITSM_API_BASE_URL') | default('https://itsm-app-itsm-app.apps.' ~ ocp_host, true) }}"
+  api_user: "{{ lookup('ansible.builtin.env', 'ITSM_API_USER') | default('admin', true) }}"
+  api_password: "{{ lookup('ansible.builtin.env', 'ITSM_API_PASSWORD') | default(lookup('ansible.builtin.env', 'ITSM_BOOTSTRAP_ADMIN_PASSWORD') | default('admin', true), true) }}"
+  eda_user:
+    username: ansible
+    password: "{{ lookup('ansible.builtin.env', 'ITSM_EDA_USER_PASSWORD') | default('R3dh4t1!', true) }}"
+    role: user
+
+# Passed into itsm_bootstrap / itsm_ansible_role (admin API calls use itsm.api_* above)
+itsm_bootstrap_users:
+  - username: "{{ itsm.eda_user.username }}"
+    password: "{{ itsm.eda_user.password }}"
+    role: "{{ itsm.eda_user.role }}"
+

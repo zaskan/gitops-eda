@@ -30,12 +30,12 @@ workflowjobtemplates:
           type: job_template
         related:
           success_nodes:
-            - identifier: "Update Servicenow Ticket"
-      - identifier: "Update Servicenow Ticket"
+            - identifier: "Update ITSM Ticket"
+      - identifier: "Update ITSM Ticket"
         unified_job_template:
           organization:
             name: "Default"
-          name: "[JT] Update Servicenow Ticket"
+          name: "[JT] Update ITSM Ticket"
           type: job_template
 
   - name: "[WF] Extend Openshift Physical Volume"
@@ -69,10 +69,10 @@ workflowjobtemplates:
           type: job_template
         related:
           success_nodes:
-            - identifier: "Update Servicenow Ticket"
-      - identifier: "Update Servicenow Ticket"
+            - identifier: "Update ITSM Ticket"
+      - identifier: "Update ITSM Ticket"
         unified_job_template:
           organization:
             name: "Default"
-          name: "[JT] Update Servicenow Ticket"
+          name: "[JT] Update ITSM Ticket"
           type: job_template

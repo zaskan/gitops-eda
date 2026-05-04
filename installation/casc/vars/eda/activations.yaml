@@ -10,7 +10,6 @@ activations:
     awx_token: "Ansible Controller"
     credential: 
       - "Red Hat Ansible Automation Platform Credential"
-      - "ServiceNow Credential"
   - name: Payment PVC Rulebook Activation
     description: Alertmanager Rulebook Activationf or payment application
     project: "Ansible Gitops EDA Demo"
@@ -22,4 +21,3 @@ activations:
     awx_token: "Ansible Controller"
     credential: 
       - "Red Hat Ansible Automation Platform Credential"
-      - "ServiceNow Credential"

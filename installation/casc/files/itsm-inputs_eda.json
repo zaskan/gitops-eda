@@ -1,0 +1,25 @@
+{
+  "fields": [
+    {
+      "id": "itsm_api_base_url",
+      "type": "string",
+      "label": "ITSM API base URL (no trailing slash)"
+    },
+    {
+      "id": "itsm_api_user",
+      "type": "string",
+      "label": "ITSM API username"
+    },
+    {
+      "id": "itsm_api_password",
+      "type": "string",
+      "label": "ITSM API password",
+      "secret": true
+    }
+  ],
+  "required": [
+    "itsm_api_base_url",
+    "itsm_api_user",
+    "itsm_api_password"
+  ]
+}

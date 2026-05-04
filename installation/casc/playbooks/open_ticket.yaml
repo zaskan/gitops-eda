@@ -1,30 +1,30 @@
 ---
-- name: Open Ticket
+- name: Open ITSM incident
   hosts: localhost
   gather_facts: false
   tasks:
 
-    - name: Open ServiceNow incident
-      servicenow.itsm.incident:
-        state: new
-        caller: "ansible"
-        short_description: "{{ title }}"
-        description: "{{ description }}Check manifest: {{ manifest }}"
-        impact: "high"
-        urgency: "high"
-        other:
-          assigned_to: "ansible"
-      register: incident
+    - name: Create itsm-app incident (role tasks from incidents.yml only)
+      ansible.builtin.include_role:
+        name: itsm_ansible_role
+        tasks_from: incidents.yml
+      vars:
+        itsm_incident_by_key: {}
+        itsm_api_base_url: "{{ itsm_api_base_url | trim | regex_replace('/$', '') }}"
+        itsm_api_user: "{{ itsm_api_user }}"
+        itsm_api_password: "{{ itsm_api_password }}"
+        itsm_validate_certs: true
+        itsm_ansible_role_incidents: true
+        itsm_incidents:
+          - incident_key: "eda-{{ alert | default('alert') }}"
+            title: "{{ title }}"
+            description: "{{ description }}Check manifest: {{ manifest }}"
+            severity: high
 
-    - name: Set ServiceNow incident state
-      servicenow.itsm.incident:
-        state: in_progress
-        number: "{{ incident.record.number }}"
-
-    - name: Set ServiceNow incident number
+    - name: Record incident public id for downstream jobs
       ansible.builtin.set_stats:
         data:
-          incident: "{{ incident.record.number }}"
+          incident: "{{ itsm_incident_by_key['eda-' ~ (alert | default('alert'))] }}"
 
     - name: Silence Alarms
       kubernetes.core.k8s_exec:

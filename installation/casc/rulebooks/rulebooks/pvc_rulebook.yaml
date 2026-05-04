@@ -1,4 +1,4 @@
-- name: EDA Listener for Alertmanager and Servicenow - PVC
+- name: EDA Listener for Alertmanager and ITSM App - PVC
   hosts: localhost
   sources:
     - name: Listen to Alertmanager
@@ -7,19 +7,17 @@
         port: 5000
         data_host_path: ""
 
-    - name: Check new Incidents
-      cloin.eda.snow_records:
-        instance: "{{ instance }}"
-        username: "{{ username }}"
-        password: "{{ password }}"
-        table: incident
-        interval: 1
+    - name: itsm-app webhooks
+      ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 5001
+
   rules:
     - name: Get Alertmanager Alerts
       condition: event.alert.labels.alertname == "PVCUsageHigh" and event.alert.status == "firing"
       action:
         run_job_template:
-          name: "[JT] Open Servicenow Ticket"
+          name: "[JT] Open ITSM Ticket"
           organization: "Default"
           job_args:
             extra_vars:
@@ -30,12 +28,15 @@
               alert: "{{ event.alert.labels.alertname }}"
 
     - name: Trigger Remediation for PVCUsageHigh
-      condition: event.short_description is regex("^PVCUsageHigh.*", ignorecase=false)
+      condition: >-
+        event.payload is defined and event.payload.event == "incident.created" and
+        "PVCUsageHigh" in event.payload.incident.title
       action:
         run_workflow_template:
           name: "[WF] Extend Openshift Physical Volume"
           organization: "Default"
           job_args:
             extra_vars:
-              incident_id: "{{ event.number }}"
-              description: "{{ event.description }}"
+              incident_id: "{{ event.payload.incident.public_id }}"
+              description: "{{ event.payload.incident.description }}"
+              message: "PVC extension remediation completed"

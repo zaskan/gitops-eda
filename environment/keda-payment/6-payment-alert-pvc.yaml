@@ -15,7 +15,7 @@ spec:
           for: 1s
           labels:
             severity: warning
-            snow_action: open_incident
+            itsm_action: open_incident
             manifest: pvc.yaml
           annotations:
             summary: "PVC {{ $labels.persistentvolumeclaim }} usage above 90%" #TODO Beautify these lines

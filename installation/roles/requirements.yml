@@ -1,0 +1,6 @@
+---
+roles:
+  - name: itsm_ansible_role
+    src: https://github.com/zaskan/demos.utils.git
+    scm: git
+    version: main

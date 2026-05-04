@@ -1,8 +1,0 @@
-snow_user:
-  firstname: "Red Hat"
-  lastname: "Ansible"
-  username: "ansible"
-  password: "R3dh4t1!"
-  role: "sn_incident_write"
-  avatar: "casc/files/ansible_logo.png"
-  

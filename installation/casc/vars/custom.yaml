@@ -1,9 +1,13 @@
 openshift_host: "{{ lookup('pipe', 'oc whoami --show-server') }}"
 openshift_token: "{{ lookup('pipe', 'oc whoami --show-token') }}"
 
-sn_host: "{{ lookup('ansible.builtin.env', 'SERVICENOW_HOST') }}"
-sn_username: "{{ lookup('ansible.builtin.env', 'SERVICENOW_USER') }}"
-sn_password: "{{ lookup('ansible.builtin.env', 'SERVICENOW_PASS') }}"
+eda_host: "{{ controller_host }}"
+eda_user: "{{ aap_username }}"
+eda_pass: "{{ aap_password }}"
+
+itsm_api_base_url: "{{ itsm.api_base_url }}"
+itsm_api_user: "{{ itsm.api_user }}"
+itsm_api_password: "{{ itsm.api_password }}"
 
 gitea_host: "https://gitea-{{ gitea.namespace }}.apps.{{ gitea.ocp_domain }}"
 gitea_username: "gitea"

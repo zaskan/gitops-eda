@@ -9,9 +9,19 @@
 
     - name: Install collections
       ansible.builtin.command: ansible-galaxy collection install -r collections/requirements.yaml --force
+      args:
+        chdir: "{{ playbook_dir }}"
       register: install_collections
       changed_when: install_collections.rc == 0
-      when: install_collections == true
+      when: install_collections | default(false) | bool
+
+    - name: Install Ansible roles from requirements file (user-wide roles dir, not this repo)
+      ansible.builtin.command: ansible-galaxy role install -r roles/requirements.yml --force
+      args:
+        chdir: "{{ playbook_dir }}"
+      register: role_install
+      changed_when: role_install.rc == 0
+      when: install_ansible_roles | default(true) | bool
 
     - name: Create Demo namespaces
       kubernetes.core.k8s:
@@ -24,6 +34,86 @@
       loop: "{{ namespaces }}"
       loop_control:
         loop_var: namespace
+
+    - name: Apply itsm-app Namespace from upstream repo (zaskan/itsm-app k8s/)
+      ansible.builtin.command:
+        argv:
+          - oc
+          - apply
+          - "-f"
+          - "{{ itsm_app_manifest_base }}/namespace.yaml"
+
+    - name: In-cluster image build for itsm-app from Git repoURL
+      when: itsm_app.cluster_build | default(true) | bool
+      block:
+        - name: Check if BuildConfig itsm-app exists
+          ansible.builtin.command: oc -n itsm-app get bc/itsm-app -o name
+          register: itsm_bc_check
+          failed_when: false
+          changed_when: false
+
+        # Git URL must be the first argument after `new-build` so the BC gets StrategyGitSource, not binary.
+        - name: Create BuildConfig from Git source URL (Dockerfile in repo)
+          ansible.builtin.command:
+            argv:
+              - oc
+              - "-n"
+              - itsm-app
+              - new-build
+              - "{{ itsm_app_source_repo_url }}"
+              - --strategy=docker
+              - --name=itsm-app
+              - "-l"
+              - app=itsm-app
+          when: itsm_bc_check.rc != 0
+          register: itsm_new_build
+          changed_when: itsm_new_build.rc == 0
+
+        # Source is on the BuildConfig from `new-build`; do not use `start-build --from-repo` with an https URL (oc treats it as a local path).
+        - name: Start build from Git and follow log
+          ansible.builtin.command:
+            argv:
+              - oc
+              - "-n"
+              - itsm-app
+              - start-build
+              - itsm-app
+              - --follow
+          register: itsm_start_build
+          changed_when: itsm_start_build.rc == 0
+
+    - name: Create itsm-app Secret (values from vars; keys match upstream k8s/secret.yaml)
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: itsm-secrets
+            namespace: itsm-app
+          type: Opaque
+          stringData:
+            session-secret: "{{ itsm_app.session_secret }}"
+            mcp-token: "{{ itsm_app.mcp_token }}"
+            bootstrap-admin-user: "{{ itsm_app.bootstrap_admin_user }}"
+            bootstrap-admin-password: "{{ itsm_app.bootstrap_admin_password }}"
+
+    - name: Apply itsm-app Deployment, Service, Route from upstream repo
+      ansible.builtin.command:
+        argv:
+          - oc
+          - apply
+          - "-f"
+          - "{{ itsm_app_manifest_base }}/{{ item }}"
+      loop:
+        - deployment.yaml
+        - service.yaml
+        - route.yaml
+
+    - name: Wait for itsm-app Deployment rollout
+      ansible.builtin.command: oc -n itsm-app rollout status deployment/itsm-app --timeout=300s
+      register: itsm_rollout
+      changed_when: false
 
     - name: Setup Gitea
       ansible.builtin.include_role:
@@ -84,7 +174,3 @@
     - name: Trigger Ansible Automation Platform Configuration as Code
       ansible.builtin.include_tasks:
         file: casc/deploy.yaml
-      vars:
-        sn_host: "{{ servicenow.sn_host }}"
-        sn_username: "{{ servicenow.sn_username }}"
-        sn_password: "{{ servicenow.sn_password }}"
