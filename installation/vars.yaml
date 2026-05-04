@@ -49,15 +49,15 @@ gitea:
   repositories:
     - name: payment-deploy
       url: https://github.com/zaskan/gitops-eda.git
-      branch: vol_increase_feature # Cambiar a master cuando se haga el merge
+      branch: servicenow_replacement # Cambiar a master cuando se haga el merge
       path: "/payment-deploy"
     - name: ansible-rulebooks
       url: https://github.com/zaskan/gitops-eda.git
-      branch: vol_increase_feature
+      branch: servicenow_replacement
       path: "/installation/casc/rulebooks"
     - name: ansible-playbooks
       url: https://github.com/zaskan/gitops-eda.git
-      branch: vol_increase_feature
+      branch: servicenow_replacement
       path: "/installation/casc/playbooks"
   users: []
 
