@@ -27,10 +27,15 @@
               manifest: "{{ event.alert.labels.manifest }}"
               alert: "{{ event.alert.labels.alertname }}"
 
+    # ansible-rulebook: `in` is list membership only; use `is search(...)` for substring (see conditions docs).
     - name: Trigger Remediation for HPAReplicasAtMaxCapacity
       condition: >-
-        event.payload is defined and event.payload.event == "incident.created" and
-        "HPAReplicasAtMaxCapacity" in event.payload.incident.title
+        event.meta is defined and event.meta.source is defined
+        and event.meta.source.name == "itsm-app webhooks"
+        and event.payload is defined
+        and event.payload.incident is defined
+        and event.payload.event == "incident.created"
+        and event.payload.incident.title is search("HPAReplicasAtMaxCapacity", ignorecase=true)
       action:
         run_workflow_template:
           name: "[WF] Autoscale Pipeline"

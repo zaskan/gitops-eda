@@ -43,6 +43,11 @@ controller_password: "{{ aap_password }}"
 
 aap_host: "{{ lookup('ansible.builtin.env', 'AAP_HOST') | default('https://' ~ aap_controller_fqdn, true) }}"
 
+# itsm outbound webhooks → EDA (itsm_bootstrap builds one URL per activations[].name → <slug>.<domain>:port)
+itsm_eda_webhook_internal_scheme: "{{ lookup('ansible.builtin.env', 'ITSM_EDA_WEBHOOK_SCHEME') | default('http', true) }}"
+itsm_eda_webhook_listen_port: "{{ lookup('ansible.builtin.env', 'ITSM_EDA_WEBHOOK_LISTENER_PORT') | default('5001', true) }}"
+itsm_eda_webhook_cluster_domain: "{{ lookup('ansible.builtin.env', 'ITSM_EDA_WEBHOOK_CLUSTER_DOMAIN') | default('aap.svc.cluster.local', true) }}"
+
 gitea:
   namespace: gitea
   ocp_domain: "{{ ocp_host }}"

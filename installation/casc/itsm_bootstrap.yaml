@@ -1,5 +1,16 @@
 ---
-- name: Configure itsm-app via itsm_ansible_role (API user, optional demo data)
+- name: Load EDA activation definitions (webhook URLs derived from activation name)
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/casc/vars/eda/activations.yaml"
+
+- name: Require definitions for webhook sync
+  ansible.builtin.assert:
+    that:
+      - activations is defined
+      - activations | length > 0
+    fail_msg: casc/vars/eda/activations.yaml must define a non-empty activations list.
+
+- name: Configure itsm-app users
   ansible.builtin.include_role:
     name: itsm_ansible_role
   vars:
@@ -16,3 +27,39 @@
     itsm_ansible_role_incidents: false
     itsm_ansible_role_followups: false
     itsm_users: "{{ itsm_bootstrap_users }}"
+
+- name: Build itsm webhook list (one listener URL per activation)
+  ansible.builtin.set_fact:
+    itsm_eda_activation_webhooks: "{{ itsm_eda_activation_webhooks | default([]) + [_eda_wh_entry] }}"
+  loop: "{{ activations }}"
+  loop_control:
+    label: "{{ item.name }}"
+  vars:
+    _eda_wh_slug: "{{ item.name | lower | replace(' ', '-') | regex_replace('-+', '-') | regex_replace('^-|-$', '') }}"
+    _eda_wh_entry:
+      url: "{{ itsm_eda_webhook_internal_scheme }}://{{ _eda_wh_slug }}.{{ itsm_eda_webhook_cluster_domain }}:{{ itsm_eda_webhook_listen_port }}"
+      label: "{{ item.name }}"
+      enabled: true
+
+- name: Sync itsm outbound webhooks for each EDA activation
+  ansible.builtin.include_role:
+    name: itsm_ansible_role
+  vars:
+    itsm_api_base_url: "{{ itsm.api_base_url.rstrip('/') }}"
+    itsm_api_user: "{{ itsm.api_user }}"
+    itsm_api_password: "{{ itsm.api_password }}"
+    itsm_validate_certs: true
+    itsm_ansible_role_check_connection: true
+    itsm_ansible_role_admin_settings: true
+    itsm_app_title: ""
+    itsm_branding: {}
+    itsm_webhook_url: null
+    itsm_webhooks: "{{ itsm_eda_activation_webhooks }}"
+    itsm_webhooks_remove_unlisted: false
+    itsm_ansible_role_users: false
+    itsm_ansible_role_asset_types: false
+    itsm_ansible_role_inventory: false
+    itsm_ansible_role_kb: false
+    itsm_ansible_role_incidents: false
+    itsm_ansible_role_followups: false
+    itsm_users: []

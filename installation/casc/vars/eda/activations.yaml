@@ -11,7 +11,7 @@ activations:
     credential: 
       - "Red Hat Ansible Automation Platform Credential"
   - name: Payment PVC Rulebook Activation
-    description: Alertmanager Rulebook Activationf or payment application
+    description: Alertmanager Rulebook Activation for payment application
     project: "Ansible Gitops EDA Demo"
     rulebook: "pvc_rulebook.yaml"
     decision_environment: "EDA Decision Environment"

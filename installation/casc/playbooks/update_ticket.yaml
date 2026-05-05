@@ -12,13 +12,13 @@
 
     - name: Add work note as comment on itsm-app incident
       ansible.builtin.include_role:
-        name: itsm_ansible_role
+        name: demos.utils.itsm_ansible_role
         tasks_from: incident_followups.yml
       vars:
         itsm_api_base_url: "{{ itsm_api_base_url | trim | regex_replace('/$', '') }}"
         itsm_api_user: "{{ itsm_api_user }}"
         itsm_api_password: "{{ itsm_api_password }}"
-        itsm_validate_certs: true
+        itsm_validate_certs: false
         itsm_ansible_role_followups: true
         itsm_incident_by_key:
           run: "{{ incident_id }}"
@@ -26,3 +26,4 @@
           - incident_key: run
             comments:
               - body: "{{ message }}. Check the current values in the file {{ manifest[0] }} stored in the repository {{ repository }}"
+            close: {}
