@@ -39,6 +39,9 @@ export AAP_PASSWORD="…"   # AAP admin — required for CAC (Controller + EDA m
 ANSIBLE_CONFIG="$(pwd)/ansible.cfg" ansible-playbook installation/install.yaml -e "ocp_host=$CLUSTER_DOMAIN"
 ```
 
+ansible-playbook install.yaml -e "ocp_host=$CLUSTER_DOMAIN" -e "k8s_validate_certs=false" -e "activate=false" -e aap_host=ansible-aap.apps.ocp.cluster.es -e aap_username=xxxxx -e=aap_password=xxxxx -e=install_operators=false
+
+
 Defaults for hostnames follow OpenShift routes `ansible-controller-aap` and `ansible-eda-aap` (see [`installation/vars.yaml`](installation/vars.yaml)); override **`AAP_HOST`**, **`AAP_HOSTNAME`** / **`CONTROLLER_HOST`**, **`AAP_USERNAME`**, **`AAP_PASSWORD`** if your deployment differs.
 
 Using `ANSIBLE_CONFIG` points Ansible at the repo’s [`ansible.cfg`](ansible.cfg). Roles listed in [`installation/roles/requirements.yml`](installation/roles/requirements.yml) are installed into **`~/.ansible/roles`** by the playbook (`ansible-galaxy role install` without a project-local `-p`), so nothing is copied under `installation/roles/` except that requirements file.
@@ -60,7 +63,11 @@ Using `ANSIBLE_CONFIG` points Ansible at the repo’s [`ansible.cfg`](ansible.cf
 
 ### ITSM App webhook for EDA
 
-Rulebooks use `ansible.eda.alertmanager` on port **5000** and `ansible.eda.webhook` on port **5001**. After itsm-app is running, set the **global webhook URL** in itsm-app (Settings) to the URL where your EDA rulebook activation receives HTTPS/HTTP POSTs (for example the route or service target that forwards to the activation listener on port **5001**). itsm-app sends JSON payloads with `event` (e.g. `incident.created`), `timestamp`, `actor`, and `incident` — see the [itsm-app README](https://github.com/zaskan/itsm-app/blob/main/README.md). Without this webhook, Alertmanager-driven jobs still run, but workflow triggers that depend on new incidents will not fire until the webhook is configured.
+Rulebooks use `ansible.eda.alertmanager` on port **5000** and `ansible.eda.webhook` on port **5001**.
+
+**Automated outbound webhooks:** [`installation/casc/itsm_bootstrap.yaml`](installation/casc/itsm_bootstrap.yaml) (after loading [`installation/casc/vars/eda/activations.yaml`](installation/casc/vars/eda/activations.yaml)) builds one webhook per activation with URL **`http://<name_slug>.aap.svc.cluster.local:<port>`** (`<name_slug>` is the activation **`name`** lowercased with spaces collapsed to **`-`** for DNS-style host labels). It calls **`itsm_ansible_role`** with **`itsm_webhooks`** (multi-target REST API documented in [**demos.utils `itsm-ansible-role`**](https://github.com/zaskan/demos.utils/blob/main/roles/itsm-ansible-role/README.md)). Reinstall the Galaxy role after that repo updates (`ansible-galaxy role install … --force`). Override scheme/port/DNS suffix with **`ITSM_EDA_WEBHOOK_SCHEME`**, **`ITSM_EDA_WEBHOOK_LISTENER_PORT`**, **`ITSM_EDA_WEBHOOK_CLUSTER_DOMAIN`** or vars in [`installation/vars.yaml`](installation/vars.yaml).
+
+Payload semantics: `event`, `timestamp`, `actor`, `incident` — [itsm-app README](https://github.com/zaskan/itsm-app/blob/main/README.md).
 
 ## Uninstall
 

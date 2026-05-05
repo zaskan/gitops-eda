@@ -8,7 +8,7 @@ export const options = {
 };
 
 export default function () {
-  const url = 'http://payment-payment.apps.cluster-qkw84.qkw84.sandbox2020.opentlc.com/api/pay'; // Application Endpoint
+  const url = 'http://payment-payment.apps.ocp.zaskan.es/api/pay'; // Application Endpoint
   
   const payload = JSON.stringify({
     amount: 100, // Payment Quantity
